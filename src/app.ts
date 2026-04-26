@@ -2,6 +2,7 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import ratelimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 
 import { config } from '@/config/env';
 import logger from '@/config/logger';
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(helmet());
+app.use(cookieParser());
 
 const limiter = ratelimit({
   max: 300,

@@ -11,3 +11,47 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model User {
+  id                  String       @id @default(uuid())
+  email               String       @unique
+  password            String
+  password_changed_at DateTime?
+  name                String?
+  submissions         Submission[]
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+}
+
+model Submission {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  language   String
+  code       String
+  status     Status   @default(PENDING)
+  tokenCount Int?
+  review     Review?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Review {
+  id           String     @id @default(uuid())
+  submissionId String     @unique
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  quality      Json
+  security     Json
+  formatting   Json
+  summary      String
+  modelUsed    String
+  processingMs Int
+  createdAt    DateTime   @default(now())
+}
+
+enum Status {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
