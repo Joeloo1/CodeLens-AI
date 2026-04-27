@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import logger from '@/config/logger';
-import { AuthService } from '@/modules/auth.service';
+import { AuthService } from '@/modules/auth/auth.service';
 import { catchAsync } from '@/utils/catchAsync';
 import { config } from '@/config/env';
 

@@ -1,5 +1,5 @@
 import { prisma } from '@/config/database';
-import { SignupInput, LoginInput } from '@/modules/auth.schema';
+import { SignupInput, LoginInput } from '@/modules/auth/auth.schema';
 import { hashPassword, comparePassword } from '@/utils/password';
 import AppError from '@/utils/appError';
 import logger from '@/config/logger';
