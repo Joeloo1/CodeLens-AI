@@ -2,11 +2,20 @@ import app from '@/app';
 import { config } from '@/config/env';
 import logger from '@/config/logger';
 import { connectDatabase, disconnectDatabase } from '@/config/database';
+import { redis } from '@/config/redis';
 
 const bootstrap = async () => {
   const port = config.PORT;
   logger.info('Starting database connection...');
   await connectDatabase();
+
+  redis.on('connect', () => logger.info('✅ Connected to Redis'));
+  redis.on('ready', () => logger.info('Redis Ready'));
+  redis.on('error', (err) => logger.error('Redis Error', err));
+  redis.on('close', () => logger.warn('Redis connection closed'));
+  redis.on('reconnecting', (delay: number) =>
+    logger.info('Redis reconnecting', delay),
+  );
 
   const server = app.listen(port, () => {
     logger.info(`Server running at http://localhost:${port}`);
