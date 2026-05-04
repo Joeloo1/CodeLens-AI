@@ -1,9 +1,11 @@
 import { prisma } from '@/config/database';
-import { SignupInput, LoginInput } from '@/modules/auth/auth.schema';
+import { SignupInput, LoginInput, RefreshTokenInput } from '@/modules/auth/auth.schema';
 import { hashPassword, comparePassword } from '@/utils/password';
 import AppError from '@/utils/appError';
 import logger from '@/config/logger';
-import { generateToken } from '@/utils/jwt';
+import { generateToken, verifyToken } from '@/utils/jwt';
+import { jwtPayload } from '@/types/auth.types';
+import { redis } from '@/config/redis';
 
 export const AuthService = {
   async signup(input: SignupInput) {
@@ -35,7 +37,15 @@ export const AuthService = {
       },
     });
 
-    const token = generateToken({ userId: user.id });
+    const accessToken = generateToken({ id: user.id, type: 'access' }, '15m');
+    const refreshToken = generateToken({ id: user.id, type: 'refresh' }, '7d');
+
+    // Store refresh token in Redis for revocation capability
+    await redis.setex(
+      `refresh_token:${user.id}`,
+      7 * 24 * 60 * 60,
+      refreshToken,
+    );
 
     logger.info('New user signed up with email: ' + email);
 
@@ -45,7 +55,7 @@ export const AuthService = {
       email: user.email,
     };
 
-    return { user: sanitizedUser, token };
+    return { user: sanitizedUser, accessToken, refreshToken };
   },
 
   async login(input: LoginInput) {
@@ -67,7 +77,15 @@ export const AuthService = {
       throw new AppError('Invalid email or password', 401);
     }
 
-    const token = generateToken({ userId: user.id });
+    const accessToken = generateToken({ id: user.id, type: 'access' }, '15m');
+    const refreshToken = generateToken({ id: user.id, type: 'refresh' }, '7d');
+
+    // Store refresh token in Redis for revocation capability
+    await redis.setex(
+      `refresh_token:${user.id}`,
+      7 * 24 * 60 * 60,
+      refreshToken,
+    );
 
     logger.info('User logged in successfully with email: ' + email);
 
@@ -77,6 +95,40 @@ export const AuthService = {
       email: user.email,
     };
 
-    return { user: sanitizedUser, token };
+    return { user: sanitizedUser, accessToken, refreshToken };
+  },
+
+  async refreshToken(input: RefreshTokenInput) {
+    const { token } = input;
+
+    try {
+      const decoded = verifyToken(token) as jwtPayload;
+
+      if (decoded.type !== 'refresh') {
+        logger.warn('Invalid token type for refresh');
+        throw new AppError('Invalid refresh token', 401);
+      }
+
+      // Verify refresh token exists in Redis
+      const storedToken = await redis.get(`refresh_token:${decoded.id}`);
+      if (storedToken !== token) {
+        logger.warn(`Refresh token mismatch for user ${decoded.id}`);
+        throw new AppError('Refresh token has been revoked', 401);
+      }
+
+      // Generate new access token
+      const newAccessToken = generateToken(
+        { id: decoded.id, type: 'access' },
+        '15m',
+      );
+
+      logger.info(`Token refreshed for user ${decoded.id}`);
+
+      return { accessToken: newAccessToken };
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      logger.warn(`Invalid refresh token: ${err}`);
+      throw new AppError('Invalid refresh token', 401);
+    }
   },
 };
