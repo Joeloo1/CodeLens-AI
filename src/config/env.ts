@@ -35,4 +35,6 @@ export const config = {
   REDIS_PORT: getNumber('REDIS_PORT'),
   REDIS_PASSWORD: getEnv('REDIS_PASSWORD', false),
   REDIS_DB: getNumber('REDIS_DB'),
+  GROQ_API_KEY: getEnv('GROQ_API_KEY'),
+  CORS_ORIGIN: getEnv('CORS_ORIGIN', false) || 'http://localhost:3000',
 };

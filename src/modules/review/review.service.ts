@@ -46,20 +46,44 @@ export const ReviewService = {
     return submission;
   },
 
-  async getUserSubmission(userId: string) {
-    const submissions = await prisma.submission.findMany({
-      where: { userId },
-      include: {
-        review: {
-          select: {
-            summary: true,
-            createdAt: true,
+  async getUserSubmission(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [submissions, total] = await Promise.all([
+      prisma.submission.findMany({
+        where: { userId },
+        include: {
+          review: {
+            select: {
+              summary: true,
+              createdAt: true,
+            },
           },
         },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.submission.count({
+        where: { userId },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      submissions,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
       },
-      orderBy: { createdAt: 'desc' },
-    });
-    return submissions;
+    };
   },
 
   async deleteSubmission(submissionId: string, userId: string) {

@@ -41,6 +41,12 @@ const bootstrap = async () => {
       await closeServer();
       logger.info('⛔ HTTP server closed.');
       await disconnectDatabase();
+      logger.info('🔌 Database disconnected.');
+      
+      // Disconnect Redis
+      await redis.quit();
+      logger.info('🔌 Redis disconnected.');
+      
       process.exit(0);
     } catch (err) {
       logger.error('Error during shutdown:', err);

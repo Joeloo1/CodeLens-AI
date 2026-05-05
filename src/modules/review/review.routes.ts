@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { ReviewController } from '@/modules/review/review.controller';
 import { authMiddleware } from '@/middleware/auth.moddleware';
-import { createSubmissionSchema } from '@/modules/review/review.schema';
+import { createSubmissionSchema, getUserSubmissionsSchema } from '@/modules/review/review.schema';
 import { validateRequest } from '@/middleware/validation.middleware';
 
 const router: Router = Router();
@@ -14,7 +14,7 @@ router.post(
   ReviewController.createSubmission,
 );
 
-router.get('/', ReviewController.getAll);
+router.get('/', validateRequest(getUserSubmissionsSchema), ReviewController.getAll);
 router.get('/:id', ReviewController.getOne);
 router.delete('/:id', ReviewController.deleteSubmission);
 
