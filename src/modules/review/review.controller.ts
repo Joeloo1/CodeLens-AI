@@ -20,15 +20,18 @@ export const ReviewController = {
 
   getAll: catchAsync(async (req: Request, res: Response) => {
     const userId = req.user?.id;
-    const submissions = await ReviewService.getUserSubmission(userId!);
+    const page = parseInt(req.query['page'] as string) || 1;
+    const limit = parseInt(req.query['limit'] as string) || 10;
 
-    logger.info(`Fetched ${submissions.length} submissions for user ${userId}`);
+    const result = await ReviewService.getUserSubmission(userId!, page, limit);
+
+    logger.info(
+      `Fetched ${result.submissions.length} submissions for user ${userId} (page ${page})`,
+    );
 
     res.status(200).json({
       status: 'success',
-      data: {
-        submissions,
-      },
+      data: result,
     });
   }),
 
